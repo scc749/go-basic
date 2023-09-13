@@ -5815,7 +5815,7 @@ Go语言中的变量是分为两部分的：
 
 ### 9.3 反射的基础数据类型
 
-![reflect.png](./assets/reflect.png)
+![reflect](./assets/reflect.png)
 
 ### 9.4 reflect.TypeOf()
 
