@@ -1259,7 +1259,7 @@ type ms map[string]string
 type add func(a, b int) int
 ```
 
-### 4.3 数组 
+### 4.3 数组
 
 ![avatar](./assets/array.png)  
 
@@ -1686,7 +1686,7 @@ s := make([]int, 3, 5)	// len=3, cap=5
 sub_slice = s[1:3]		// len=2, cap=4
 ```
 
-刚开始，子切片和母切片共享底层的内存空间，修改子切片会反映到母切片上，在子切片上执行`append()函数`会把新元素放到母切片预留的内存空间上。当子切片不断执行`append()函数`，耗完了母切片预留的内存空间，子切片跟母切片就会发生内存分离，此后两个切片没有任何关系。  
+刚开始，子切片和母切片共享底层的内存空间，修改子切片会反映到母切片上，在子切片上执行`append()函数`会把新元素放到母切片预留的内存空间上。当子切片不断执行`append()函数`，耗完了母切片预留的内存空间，子切片跟母切片就会发生内存分离，此后两个切片没有任何关系。
 
 ![avatar](./assets/sub_slice.png) 
 
@@ -1976,7 +1976,7 @@ fmt.Printf("err %v\n", err)
 
 #### 4.7.1 map定义
 
-Go语言`map`的底层实现是`hash table`，根据`key`查找`value`的时间复杂度是O(1)。  
+Go语言`map`的底层实现是`hash table`，根据`key`查找`value`的时间复杂度是O(1)。
 
 ![avatar](./assets/map.png)
 
@@ -2224,7 +2224,8 @@ fmt.Println(m5)
 
 ### 4.8 channel（初步了解）
 
-`channel`(管道)底层是一个环形队列(先进先出)，`send`(插入)和`recv`(取走)从同一个位置沿同一个方向顺序执行。`sendx`表示最后一次插入元素的位置，`recvx`表示最后一次取走元素的位置。  
+`channel`(管道)底层是一个环形队列(先进先出)，`send`(插入)和`recv`(取走)从同一个位置沿同一个方向顺序执行。`sendx`表示最后一次插入元素的位置，`recvx`表示最后一次取走元素的位置。
+
 ![avatar](./assets/channel.png)  
 
 ```go
@@ -7456,7 +7457,7 @@ func main() {
 
 ```
 
-## 10.14 Goroutine Recover解决协程中出现的Panic
+### 10.14 Goroutine Recover解决协程中出现的Panic
 
 ```go
 package main
