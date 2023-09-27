@@ -175,7 +175,7 @@ go1.21.0.windows-amd64.zip（下载这个虽然只需要解压就好了，但是
 
 ### 2.3 配置GOPATH？
 
-**不，咱先不配，后面将详细介绍什么是`GOROOT`，`GOPATH`，`GOPROXY`，`GOMODULE111`，然后去了解，为什么要配它们**
+**不，咱先不配，后面将详细介绍什么是`GOROOT`，`GOPATH`，`GOPROXY`，`GO111MODULE`，然后去了解，为什么要配它们**
 
 ### 2.4 VSCode的安装及配置
 
