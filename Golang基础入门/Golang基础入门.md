@@ -321,7 +321,7 @@ func main() {
 
 ![VSCode写Golang程序10](.\assets\VSCode写Golang程序10.png)
 
-**后面解决，一堆报红及GOROOT，GOPATH，GOPROXY，GOMODULE111是什么。**
+**后面解决，一堆报红及GOROOT，GOPATH，GOPROXY，GO111MODULE是什么。**
 
 ### 2.6 VSCode的Go工具插件（一）
 
