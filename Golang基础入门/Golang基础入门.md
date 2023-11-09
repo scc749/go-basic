@@ -7779,6 +7779,504 @@ go mod vendor
 
 ---
 
+## 模块十二：文件管理
+
+### 12.1 学习目标
+
+1.  了解文件操作的相关api
+2. 了解基本的文件操作：打开关闭文件、读取文件、写入文件、拷贝文件、重命名文件、创建目录、删除目录或文件等
+
+### 12.2 相关API
+
+1. 根据提供的文件名创建新的文件，返回一个文件对象，默认权限是0666
+
+    ```go
+    func Create(name string) (file *File, err Error)
+    ```
+
+2. 根据文件描述符创建相应的文件，返回一个文件对象
+
+    ```go
+    func NewFile(fd uintptr, name string) *File
+    ```
+
+3. 只读方式打开一个名称为name的文件
+
+    ```go
+    func Open(name string) (file *File, err Error)
+    ```
+
+4. 打开名称为name的文件，flag是打开的方式，只读、读写等，perm是权限
+
+    ```go
+    func OpenFile(name string, flag int, perm uint32) (file *File, err Error)
+    ```
+
+5. 写入byte类型的信息到文件
+
+    ```go
+    func (file *File) Write(b []byte) (n int, err Error)
+    ```
+
+6. 在指定位置开始写入byte类型的信息
+
+    ```go
+    func (file *File) WriteAt(b []byte, off int64) (n int, err Error)
+    ```
+
+7. 写入string信息到文件
+
+    ```go
+    func (file *File) WriteString(s string) (ret int, err Error)
+    ```
+
+8. 读取数据到b中
+
+    ```go
+    func (file *File) Read(b []byte) (n int, err Error)
+    ```
+
+9. 从off开始读取数据到b中
+
+    ```go
+    func (file *File) ReadAt(b []byte, off int64) (n int, err Error)
+    ```
+
+10. 删除文件名为name的文件
+
+    ```go
+    func Remove(name string) Error
+    ```
+
+### 12.3 打开和关闭文件
+
+#### 12.3.1 os.Open()
+
+`os.Open()`函数能够打开一个文件，返回一个`*File`和一个`err`。对得到的文件实例调用`close()方法`能够关闭文件（一定不要忘记关闭文件）。
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	// 只读方式打开当前目录下的main.go文件
+	file, err := os.Open("./main.go")
+	if err != nil {
+		fmt.Println("open file failed!, err:", err)
+		return
+	}
+	// 关闭文件
+	file.Close()
+}
+
+```
+
+#### 12.3.2 os.OpenFile()
+
+`os.OpenFile()函数`能够以指定模式打开文件，从而实现文件写入相关功能。
+
+```go
+func OpenFile(name string, flag int, perm FileMode) (*File, error) { ... }
+```
+
+其中： `name`：要打开的文件名，`flag`：打开文件的模式。
+
+模式有以下几种：
+
+| 模式        | 含义     |
+| :---------- | :------- |
+| os.O_WRONLY | 只写     |
+| os.O_CREATE | 创建文件 |
+| os.O_RDONLY | 只读     |
+| os.O_RDWR   | 读写     |
+| os.O_TRUNC  | 清空     |
+| os.O_APPEND | 追加     |
+
+### 12.4 读取文件
+
+#### 12.4.1 file.Read()和file.ReadAt()
+
+文件读取可以用`file.Read()`和`file.ReadAt()`，读到文件末尾会返回`io.EOF`的错误。
+
+Read 方法定义如下：
+
+```go
+func (f *File) Read(b []byte) (n int, err error)
+```
+
+它接收一个字节切片，返回读取的字节数和可能的具体错误，读到文件末尾时会返回`0`和`io.EOF`。
+
+举个例子：
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"os"
+)
+
+func main() {
+	// 只读方式打开当前目录下的 main.go 文件
+	file, err := os.Open("./main.go")
+	if err != nil {
+		fmt.Println("open file failed!, err:", err)
+		return
+	}
+	defer file.Close()
+	// 使用 Read 方法读取数据，注意一次只会读取 128 个字节
+	var tmp = make([]byte, 128)
+	n, err := file.Read(tmp)
+	if err == io.EOF {
+		fmt.Println("文件读完了")
+		return
+	}
+	if err != nil {
+		fmt.Println("read file failed, err:", err)
+		return
+	}
+	fmt.Printf("读取了%d 字节数据\n", n)
+	fmt.Println(string(tmp[:n]))
+}
+
+```
+
+`file.ReadAt()`的用法与此类似。
+
+##### 12.4.1.1 循环读取
+
+使用for循环读取文件中的所有数据。
+
+举个例子：
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"os"
+)
+
+func main() {
+	// 只读方式打开当前目录下的 main.go 文件
+	file, err := os.Open("./main.go")
+	if err != nil {
+		fmt.Println("open file failed!, err:", err)
+		return
+	}
+	defer file.Close()
+	// 循环读取文件
+	var content []byte
+	var tmp = make([]byte, 128)
+	for {
+		n, err := file.Read(tmp)
+		if err == io.EOF {
+			fmt.Println("文件读完了")
+			break
+		}
+		if err != nil {
+			fmt.Println("read file failed, err:", err)
+			return
+		}
+		content = append(content, tmp[:n]...)
+	}
+	fmt.Println(string(content))
+}
+
+```
+
+#### 12.4.2 bufio.NewReader()
+
+`bufio包`实现了带缓冲区的读写，是对文件读写的封装
+
+`bufio.NewReader()`缓冲读数据
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
+)
+
+// bufio 按行读取示例
+func main() {
+	file, err := os.Open("C:/test.txt")
+	if err != nil {
+		fmt.Println("open file failed, err:", err)
+		return
+	}
+	defer file.Close()
+	reader := bufio.NewReader(file)
+	for {
+		line, err := reader.ReadString('\n') // 注意是字符
+		if err == io.EOF {
+			if len(line) != 0 {
+				fmt.Println(line)
+			}
+			fmt.Println("文件读完了")
+			break
+		}
+		if err != nil {
+			fmt.Println("read file failed, err:", err)
+			return
+		}
+		fmt.Print(line)
+	}
+}
+
+```
+
+#### 12.4.3 ioutil.ReadFile()（Go 1.16已废弃io/ioutil包）
+
+**修改（Go 1.16及以上版本）：ioutil.ReadFile() -> os.ReadFile()**
+
+`io/ioutil包`的`ReadFile()方法`能够读取完整的文件，只需要将文件名作为参数传入。
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+)
+
+// ioutil.ReadFile 读取整个文件
+func main() {
+	content, err := ioutil.ReadFile("./main.go")
+	if err != nil {
+		fmt.Println("read file failed, err:", err)
+		return
+	}
+	fmt.Println(string(content))
+}
+
+```
+
+### 12.5 写入文件
+
+#### 12.5.1 file.Write()和file.WriteString()
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	file, err := os.OpenFile("C:/test.txt", os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		fmt.Println("open file failed, err:", err)
+		return
+	}
+	defer file.Close()
+	str := "你好 golang"
+	file.Write([]byte(str))        // 写入字节切片数据
+	file.WriteString("直接写入的字符串数据") // 直接写入字符串数据
+}
+
+```
+
+#### 12.5.2 bufio.NewWriter()
+
+`bufio.NewWriter()`缓冲写数据
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
+func main() {
+	file, err := os.OpenFile("C:/test.txt", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+	if err != nil {
+		fmt.Println("open file failed, err:", err)
+		return
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	for i := 0; i < 10; i++ {
+		writer.WriteString("你好 golang\r\n") // 将数据先写入缓存
+	}
+	writer.Flush() // 将缓存中的内容写入文件（注意）
+}
+
+```
+
+#### 12.5.3 ioutil.WriteFile()（Go 1.16已废弃io/ioutil包）
+
+**修改（Go 1.16及以上版本）：ioutil.WriteFile() -> os.WriteFile()**
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+)
+
+func main() {
+	str := "hello golang"
+	err := ioutil.WriteFile("C:/test.txt", []byte(str), 0666)
+	if err != nil {
+		fmt.Println("write file failed, err:", err)
+		return
+	}
+}
+
+```
+
+### 12.6 拷贝文件
+
+#### 12.6.1 第一种拷贝文件方法：ioutil包进行拷贝
+
+**修改（Go 1.16及以上版本）：ioutil -> os**
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+)
+
+// 自己编写一个函数，接收两个文件路径 srcFileName dstFileName
+func CopyFile(dstFileName string, srcFileName string) (err error) {
+	input, err := ioutil.ReadFile(srcFileName)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	err = ioutil.WriteFile(dstFileName, input, 0644)
+	if err != nil {
+		fmt.Println("Error creating", dstFileName)
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+func main() {
+	srcFile := "c:/test1.zip"
+	dstFile := "D:/test1.zip"
+	err := CopyFile(dstFile, srcFile)
+	if err == nil {
+		fmt.Printf("拷贝完成\n")
+	} else {
+		fmt.Printf("拷贝错误 err=%v\n", err)
+	}
+}
+
+```
+
+#### 12.6.2 第二种拷贝文件方法：文件流的方式拷贝
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"os"
+)
+
+// 自己编写一个函数，接收两个文件路径 srcFileName dstFileName
+func CopyFile(dstFileName string, srcFileName string) (err error) {
+	source, _ := os.Open(srcFileName)
+	destination, _ := os.OpenFile(dstFileName, os.O_CREATE|os.O_WRONLY, 0666)
+	buf := make([]byte, 128)
+	for {
+		n, err := source.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if n == 0 {
+			break
+		}
+		if _, err := destination.Write(buf[:n]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func main() {
+	//调用 CopyFile 完成文件拷贝
+	srcFile := "c:/000.avi"
+	dstFile := "D:/000.avi"
+	err := CopyFile(dstFile, srcFile)
+	if err == nil {
+		fmt.Printf("拷贝完成\n")
+	} else {
+		fmt.Printf("拷贝错误 err=%v\n", err)
+	}
+}
+
+```
+
+### 12.7 重命名文件
+
+```go
+err := os.Rename("C:/test1.txt", "C:/test2.txt") // 只能同盘操作
+if err != nil {
+	fmt.Println(err)
+}
+```
+
+### 12.8 创建目录
+
+#### 12.8.1 一次创建一个目录
+
+```go
+err := os.Mkdir("./abc", 0666)
+if err != nil {
+	fmt.Println(err)
+}
+```
+
+#### 12.8.2 一次创建多个目录
+
+```go
+err := os.MkdirAll("dir1/dir2/dir3", 0666) //创建多级目录
+if err != nil {
+	fmt.Println(err)
+}
+```
+
+### 12.9 删除目录和文件
+
+#### 12.9.1 删除一个目录或者文件
+
+```go
+err := os.Remove("t.txt")
+if err != nil {
+	fmt.Println(err)
+}
+```
+
+#### 12.9.2 一次删除多个目录或者文件
+
+```go
+err := os.RemoveAll("aaa")
+if err != nil {
+	fmt.Println(err)
+}
+```
+
+---
+
 ## 后记
 
 **Go基础还应包括：GoWeb、、GoSocket、Go数据库等等，如果有机会，博主再与大家介绍分享。。。**
